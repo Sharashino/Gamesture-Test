@@ -8,17 +8,18 @@ public class ScrollListItem : MonoBehaviour
 {
     [SerializeField] private TMP_Text dateCreatedText = null;
     [SerializeField] private TMP_Text fileNameText = null;
-    [SerializeField] private RawImage fileImage = null;
-    private FileInfo fileInfo;
+    [SerializeField] private Image fileImage = null;
+    private string filePath;
 
-    public FileInfo FileInfo => fileInfo;
+    public string FilePath => filePath;
 
-    public void OnRefreshAll(Texture image, FileInfo file)
+    public void OnRefresh(Sprite image, string path)
     {
-        fileInfo = file;
-        
+        var file = new FileInfo(path);
+        filePath = path;
+
         dateCreatedText.text = file.CreationTime.ToString();
         fileNameText.text = file.Name;
-        fileImage.texture = image;
+        fileImage.sprite = image;
     }
 }
