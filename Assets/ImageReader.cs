@@ -2,15 +2,21 @@ using UnityEngine.UI;
 using System.Linq;
 using UnityEngine;
 using System.IO;
+using TMPro;
+using System.Collections.Generic;
 
 // Reads image data from given path
 public class ImageReader : MonoBehaviour
 {
-    [SerializeField] private InputField pathInputField;
+    [SerializeField] private TMP_InputField pathInputField;
     [SerializeField] private Button refreshButton;
     [SerializeField] private ScrollListItem item;
     [SerializeField] private Transform holder;
     [SerializeField] private string folderPath;
+
+    [SerializeField] private List<ScrollListItem> spawnedItems = new List<ScrollListItem>();
+
+    public bool IsPathCorrect => Directory.Exists(folderPath) || !string.IsNullOrEmpty(folderPath);
 
     void Awake()
     {
@@ -19,7 +25,7 @@ public class ImageReader : MonoBehaviour
 
     private void RefreshImageData()
     {
-        if (!Directory.Exists(folderPath) || string.IsNullOrEmpty(folderPath))
+        if (!IsPathCorrect)
         {
             Debug.Log("ImageReader - Path doesnt exist or is empty!");
             return;
@@ -29,16 +35,30 @@ public class ImageReader : MonoBehaviour
 
         foreach (var file in files)
         {
-            Debug.Log($"{file.Name} | {file.CreationTime}");
-
-            byte[] byteArray = File.ReadAllBytes(file.FullName);
-            Texture2D sampleTexture = new Texture2D(2, 2);
-
-            if (sampleTexture.LoadImage(byteArray))
+            if (spawnedItems.Where(x => x.FileInfo.Length == file.Length && x.FileInfo.Name == file.Name).Any())
             {
-                var newItem = Instantiate(item, holder);
-                newItem.OnRefresh(sampleTexture, file.Name, file.CreationTime.ToShortDateString());
+                Debug.Log("Found matching file -> skipping!");
+                continue;
             }
+
+            var newItem = Instantiate(item, holder);
+            newItem.OnRefreshAll(LoadImage(file), file);
+            spawnedItems.Add(newItem);
         }
     }
+
+    private Texture LoadImage(FileInfo file)
+    {
+        byte[] byteArray = File.ReadAllBytes(file.FullName);
+        Texture2D sampleTexture = new Texture2D(2, 2);
+
+        if (sampleTexture.LoadImage(byteArray))
+        {
+            return sampleTexture;
+        }
+
+        return null;
+    }
 }
+
+
