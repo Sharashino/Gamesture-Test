@@ -71,7 +71,7 @@ public class ImageReader : MonoBehaviour
 
     private void OnFindFile()
     {
-        folderPath = OpenDirDialog("");
+        folderPath = OpenDirDialog();
 
         if (folderPath != null)
         {
@@ -81,10 +81,10 @@ public class ImageReader : MonoBehaviour
         }
     }
 
-    public string OpenDirDialog(string directory)
+    public string OpenDirDialog()
     {
         var fd = new VistaFolderBrowserDialog();
-        fd.SelectedPath = directory;
+        fd.SelectedPath = "";
         
         var res = fd.ShowDialog(new WindowWrapper(GetActiveWindow())); // Display dialog parented by current window (game window)
         var filenames = res == DialogResult.OK ? new[] { fd.SelectedPath } : new string[0];
