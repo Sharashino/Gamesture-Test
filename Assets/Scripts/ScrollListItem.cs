@@ -9,17 +9,57 @@ public class ScrollListItem : MonoBehaviour
     [SerializeField] private TMP_Text dateCreatedText = null;
     [SerializeField] private TMP_Text fileNameText = null;
     [SerializeField] private Image fileImage = null;
+    private FileInfo fileInfo;
+    private Sprite fileSprite;
     private string filePath;
+    private string fileName;
+    private string fileDate;
 
+    public FileInfo FileInfo => fileInfo;
+    public Sprite FileSprite => fileSprite;
     public string FilePath => filePath;
+    public string FileName => fileName;
+    public string FileDate => fileDate;
 
-    public void OnRefresh(Sprite image, string path)
+    public void PopulateItem(Sprite sprite, string path)
     {
-        var file = new FileInfo(path);
+        fileInfo = new FileInfo(path);
         filePath = path;
+        
+        fileDate = dateCreatedText.text = fileInfo.CreationTime.ToString();
+        fileName = fileNameText.text = fileInfo.Name;
+        fileSprite = fileImage.sprite = sprite;
+        
+        OnNameChange(fileInfo);
+        OnDateChange(fileInfo);
+    }
 
-        dateCreatedText.text = file.CreationTime.ToString();
-        fileNameText.text = file.Name;
-        fileImage.sprite = image;
+    public void RefreshSprite(Sprite sprite, string path)
+    {
+        OnSpriteChange(sprite);
+    }
+
+    public void OnNameChange(FileInfo file)
+    {
+        if (file.Name == fileName) return;
+
+        fileName = file.Name;
+        fileNameText.text = fileName;
+    }
+
+    public void OnDateChange(FileInfo file)
+    {
+        if (file.CreationTime.ToString() == fileDate) return;
+
+        fileDate = file.CreationTime.ToString();
+        dateCreatedText.text = fileDate;
+    }
+
+    public void OnSpriteChange(Sprite newSprite)
+    {
+        if (newSprite == fileSprite) return;
+
+        fileSprite = newSprite;
+        fileImage.sprite = fileSprite;
     }
 }
