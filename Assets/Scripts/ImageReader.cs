@@ -1,36 +1,39 @@
-using System.Runtime.InteropServices;
-using Button = UnityEngine.UI.Button;
 using System.Collections.Generic;
-using System.Windows.Forms;
 using System.Threading;
-using Ookii.Dialogs;
 using System.Linq;
 using UnityEngine;
 using System.IO;
 using System;
+using TMPro;
 
 // Reads image data from given path
 public class ImageReader : MonoBehaviour
 {
-    [DllImport("user32.dll")]
-    private static extern IntPtr GetActiveWindow();
-
     [SerializeField] private List<ScrollListItem> spawnedItems = new List<ScrollListItem>();
     [SerializeField] private ScrollListItem prefab;
     [SerializeField] private Transform holder;
     [SerializeField] private string folderPath;
+    [SerializeField] private TMP_Text bugText;
 
     private List<Thread> threads = new List<Thread>();
     private Queue<Action> textureLoaders = new Queue<Action>();
-
+    private List<string> currentFiles = new List<string>();
     public bool IsPathCorrect => Directory.Exists(folderPath) || !string.IsNullOrEmpty(folderPath);
     private List<string> LoadedFiles => spawnedItems.Select(x => x.FilePath).ToList();
-
     public List<ScrollListItem> SpawnedItems => spawnedItems;
 
     private void Update()
     {
-        if(threads.Count > 0)
+        if (textureLoaders.Count > 0)
+        {
+            do
+            {
+                textureLoaders?.Dequeue()?.Invoke();
+
+            } while (textureLoaders.Count > 0);
+        }
+
+        if (threads.Count > 0)
         {
             var toRemove = new List<Thread>();
 
@@ -44,31 +47,38 @@ public class ImageReader : MonoBehaviour
 
             foreach (Thread th in toRemove)
             {
-                threads.Remove(th);
                 th.Join();  // Joins to main thread
+                threads.Remove(th);
             }
-        }
-
-        if(textureLoaders.Count > 0)
-        {
-            do
-            {
-                textureLoaders.Dequeue().Invoke();
-
-            } while (textureLoaders.Count > 0);
         }
     }
 
     public void FindFilePath()
     {
-        folderPath = OpenDirDialog();
+        folderPath = OpenDirDialog.Dialog.Open("Text");
 
         if (folderPath != null)
         {
+            ClearPrevData();
             GetFiles();
         }
     }
-    
+
+    private void ClearPrevData()
+    {
+        if(spawnedItems.Count > 0)
+        {
+            foreach (var item in spawnedItems)
+            {
+                Destroy(item.gameObject);
+            }
+
+            spawnedItems.Clear();
+            threads.Clear();
+            textureLoaders.Clear();
+        }
+    }
+
     public void GetFiles()
     {
         if (!IsPathCorrect)
@@ -78,27 +88,18 @@ public class ImageReader : MonoBehaviour
         }
         else RefreshImageData();
     }
-        
-
-    private string OpenDirDialog()
-    {
-        var fd = new VistaFolderBrowserDialog();
-        fd.SelectedPath = "";
-
-        var res = fd.ShowDialog(new WindowWrapper(GetActiveWindow()));
-        var filenames = res == DialogResult.OK ? new[] { fd.SelectedPath } : new string[0];
-        fd.Dispose();
-
-        return filenames.Length > 0 ? filenames.First() : null;
-    }
 
     private void RefreshImageData()
     {
-        var currentFiles = Directory.EnumerateFiles(folderPath, "*.png").Select(x => x.Replace("\\", "/").Replace("\\", @"\")).ToList();
+        currentFiles = Directory.EnumerateFiles(folderPath, "*.png").Select(x => x.Replace("\\", "/").Replace("\\", @"\")).ToList();
+        bugText.text += $"found files {currentFiles.Count} ";
 
-        foreach (var path in LoadedFiles)
+        if (LoadedFiles != null)
         {
-            if(!currentFiles.Contains(path)) RemoveFile(path);
+            foreach (var path in LoadedFiles)
+            {
+                if (!currentFiles.Contains(path)) RemoveFile(path);
+            }
         }
         
         foreach (var path in currentFiles)
@@ -110,7 +111,7 @@ public class ImageReader : MonoBehaviour
 
     private void AddFile(string filePath)
     {
-        if (!File.Exists(filePath)) return;
+        if (!File.Exists(filePath.Replace("/", "\\").Replace(@"\", "\\"))) return;
 
         var item = Instantiate(prefab, holder);
         spawnedItems.Add(item);
@@ -120,17 +121,20 @@ public class ImageReader : MonoBehaviour
         {
             item,
             filePath
-        }); 
+        });
+
         threads.Add(t);
     }
 
     private void RemoveFile(string filePath)
     {
-        //if (!File.Exists(filePath)) return;
+        if (!File.Exists(filePath.Replace("/", "\\").Replace(@"\", "\\")))
+        {
+            return; 
+        }
+        
         var file = new FileInfo(filePath);
         var item = spawnedItems.Find(x => x.FilePath == filePath);
-
-        if(item == null) return;
 
         if(file != item.FileInfo)
         {
@@ -149,23 +153,18 @@ public class ImageReader : MonoBehaviour
     {
         var item = (ScrollListItem)((object[])args)[0];
         string path = (string)((object[])args)[1];
+
+        if (!File.Exists(path.Replace("/", "\\").Replace(@"\", "\\"))) return;
         
         byte[] byteArray = File.ReadAllBytes(path);
+        
         Action act = () =>
         {
             Texture2D texture = new Texture2D(2, 2);
 
             if (texture.LoadImage(byteArray))
             {
-                var sprite = Sprite.Create
-                (
-                    texture,
-                    new Rect(0, 0, texture.width, texture.height),
-                    Vector2.zero,
-                    100
-                );
-
-                item.PopulateItem(sprite, path);
+                item.PopulateItem(texture, path);
             }
         };
 

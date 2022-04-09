@@ -1,9 +1,6 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using TMPro;
 using UnityEngine.UI;
 using UnityEngine;
+using TMPro;
 
 public class UIController : MonoBehaviour
 {
@@ -20,7 +17,7 @@ public class UIController : MonoBehaviour
         selectFolderButton?.onClick.AddListener(OnFindFilePath);
         refreshButton?.onClick.AddListener(OnRefresh);
 
-        //ShowHideDetails(false);
+        ShowHideDetails(false);
     }
 
     private void OnRefresh()
@@ -31,6 +28,7 @@ public class UIController : MonoBehaviour
 
     public void OnFindFilePath()
     {
+        ShowHideDetails(true);
         imageReader.FindFilePath();
         elementsCountText.text = ElementsAmount.ToString();
     }

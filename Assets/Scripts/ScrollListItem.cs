@@ -1,42 +1,34 @@
 using UnityEngine.UI;
 using UnityEngine;
-using TMPro;
 using System.IO;
+using TMPro;
 
 // Panel in scroll list, displays readed image, date and name
 public class ScrollListItem : MonoBehaviour
 {
     [SerializeField] private TMP_Text dateCreatedText = null;
     [SerializeField] private TMP_Text fileNameText = null;
-    [SerializeField] private Image fileImage = null;
+    [SerializeField] private RawImage fileImage = null;
     private FileInfo fileInfo;
-    private Sprite fileSprite;
+    private Texture fileSprite;
     private string filePath;
     private string fileName;
     private string fileDate;
 
     public FileInfo FileInfo => fileInfo;
-    public Sprite FileSprite => fileSprite;
     public string FilePath => filePath;
-    public string FileName => fileName;
-    public string FileDate => fileDate;
 
-    public void PopulateItem(Sprite sprite, string path)
+    public void PopulateItem(Texture sprite, string path)
     {
         fileInfo = new FileInfo(path);
         filePath = path;
         
         fileDate = dateCreatedText.text = fileInfo.CreationTime.ToString();
         fileName = fileNameText.text = fileInfo.Name;
-        fileSprite = fileImage.sprite = sprite;
+        fileSprite = fileImage.texture = sprite;
         
         OnNameChange(fileInfo);
         OnDateChange(fileInfo);
-    }
-
-    public void RefreshSprite(Sprite sprite, string path)
-    {
-        OnSpriteChange(sprite);
     }
 
     public void OnNameChange(FileInfo file)
@@ -53,13 +45,5 @@ public class ScrollListItem : MonoBehaviour
 
         fileDate = file.CreationTime.ToString();
         dateCreatedText.text = fileDate;
-    }
-
-    public void OnSpriteChange(Sprite newSprite)
-    {
-        if (newSprite == fileSprite) return;
-
-        fileSprite = newSprite;
-        fileImage.sprite = fileSprite;
     }
 }
