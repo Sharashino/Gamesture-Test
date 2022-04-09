@@ -2,6 +2,7 @@ using UnityEngine.UI;
 using UnityEngine;
 using TMPro;
 
+// Controlls UI buttons and canvas groups
 public class UIController : MonoBehaviour
 {
     [SerializeField] private ImageReader imageReader;

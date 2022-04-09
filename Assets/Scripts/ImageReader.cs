@@ -6,33 +6,25 @@ using System.IO;
 using System;
 using TMPro;
 
-// Reads image data from given path
+// Reads file data from given path and spawns object to display file name/image/date
 public class ImageReader : MonoBehaviour
 {
     [SerializeField] private List<ScrollListItem> spawnedItems = new List<ScrollListItem>();
     [SerializeField] private ScrollListItem prefab;
     [SerializeField] private Transform holder;
-    [SerializeField] private string folderPath;
     [SerializeField] private TMP_Text bugText;
 
     private List<Thread> threads = new List<Thread>();
     private Queue<Action> textureLoaders = new Queue<Action>();
     private List<string> currentFiles = new List<string>();
+    private string folderPath;
+
     public bool IsPathCorrect => Directory.Exists(folderPath) || !string.IsNullOrEmpty(folderPath);
     private List<string> LoadedFiles => spawnedItems.Select(x => x.FilePath).ToList();
     public List<ScrollListItem> SpawnedItems => spawnedItems;
 
     private void Update()
     {
-        if (textureLoaders.Count > 0)
-        {
-            do
-            {
-                textureLoaders?.Dequeue()?.Invoke();
-
-            } while (textureLoaders.Count > 0);
-        }
-
         if (threads.Count > 0)
         {
             var toRemove = new List<Thread>();
@@ -47,9 +39,18 @@ public class ImageReader : MonoBehaviour
 
             foreach (Thread th in toRemove)
             {
-                th.Join();  // Joins to main thread
                 threads.Remove(th);
+                th.Join();  // Joins to main thread
             }
+        }
+
+        if (textureLoaders.Count > 0)
+        {
+            do
+            {
+                textureLoaders?.Dequeue()?.Invoke();
+
+            } while (textureLoaders.Count > 0);
         }
     }
 
@@ -92,14 +93,10 @@ public class ImageReader : MonoBehaviour
     private void RefreshImageData()
     {
         currentFiles = Directory.EnumerateFiles(folderPath, "*.png").Select(x => x.Replace("\\", "/").Replace("\\", @"\")).ToList();
-        bugText.text += $"found files {currentFiles.Count} ";
 
-        if (LoadedFiles != null)
+        foreach (var path in LoadedFiles)
         {
-            foreach (var path in LoadedFiles)
-            {
-                if (!currentFiles.Contains(path)) RemoveFile(path);
-            }
+            if (!currentFiles.Contains(path)) RemoveFile(path);
         }
         
         foreach (var path in currentFiles)
@@ -128,10 +125,7 @@ public class ImageReader : MonoBehaviour
 
     private void RemoveFile(string filePath)
     {
-        if (!File.Exists(filePath.Replace("/", "\\").Replace(@"\", "\\")))
-        {
-            return; 
-        }
+        if (!File.Exists(filePath.Replace("/", "\\").Replace(@"\", "\\"))) return;
         
         var file = new FileInfo(filePath);
         var item = spawnedItems.Find(x => x.FilePath == filePath);
