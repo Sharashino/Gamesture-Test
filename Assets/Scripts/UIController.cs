@@ -11,6 +11,8 @@ public class UIController : MonoBehaviour
 	[SerializeField] private Button selectFolderButton;
 	[SerializeField] private Button refreshButton;
 
+	private void SetCounter(int amt) => elementsCountText.text = amt.ToString();
+
 	void Awake()
 	{
 		selectFolderButton?.onClick.AddListener(OnFindFilePath);
@@ -22,7 +24,8 @@ public class UIController : MonoBehaviour
 
 	private void OnRefresh()
 	{
-		if(!imageReader.IsLoading)
+		// This prevents us from clicking refresh when the data is being loaded
+		if (!imageReader.IsLoading) 
         {
 			SetCounter(0);
 			imageReader.CheckFilePath();
@@ -35,11 +38,6 @@ public class UIController : MonoBehaviour
 		ShowHideDetails(imageReader.FindFilePath());
 	}
 		
-	private void SetCounter(int amt)
-    {
-		elementsCountText.text = amt.ToString();
-    }
-
 	private void ShowHideDetails(bool state)
 	{
 		if (state) detailsGroup.Enable();

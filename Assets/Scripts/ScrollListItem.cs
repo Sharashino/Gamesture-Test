@@ -14,7 +14,7 @@ public class ScrollListItem : MonoBehaviour
 	public FileInfo FileInfo => fileInfo;
 	public string FilePath => fileInfo?.FullName;
 
-	// Filling item with data from file
+	// Filling item with texture and data from file
 	public void PopulateItem(Texture texture, string path)
 	{
 		fileInfo = new FileInfo(path);

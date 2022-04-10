@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections;
 using System.Threading;
@@ -14,7 +15,7 @@ public class ImageReader : MonoBehaviour
 	[SerializeField] private ScrollListItem prefab;
 	[SerializeField] private Transform holder;
 	[SerializeField] private TMP_Text infoText; 
-	private Stack<Action> textureLoaders = new Stack<Action>();
+	private ConcurrentBag<PathArrayClass> textureLoaders = new ConcurrentBag<PathArrayClass>();
 	private Stack<Thread> threads = new Stack<Thread>();
 	private List<string> currentFiles = new List<string>();
 	private string folderPath;
@@ -24,7 +25,6 @@ public class ImageReader : MonoBehaviour
 
 	public bool IsPathCorrect => Directory.Exists(folderPath) || !string.IsNullOrEmpty(folderPath);
 	private List<string> LoadedFiles => spawnedItems.Select(x => x.FilePath).ToList();
-	public int SpawnedItems => spawnedItems.Count;
 	public bool IsLoading => isLoading;
 
 	private void Start()
@@ -35,7 +35,7 @@ public class ImageReader : MonoBehaviour
 
 	private IEnumerator LoadingTexturesCoroutine()
 	{
-		// Loading textures from stack 
+		// Loading textures from concurent bag and spawning new list element
 		while (true)
 		{
 			yield return null;
@@ -45,19 +45,37 @@ public class ImageReader : MonoBehaviour
 				continue;
             }
 
-			isLoading = true;
-			textureLoaders?.Pop()?.Invoke();
+            for (int i = 0; i < textureLoaders.Count; i++)
+            {
+				Texture2D texture = new Texture2D(2, 2);
+				if(textureLoaders.TryTake(out PathArrayClass p))
+                {
+					isLoading = true;
+
+					if (texture.LoadImage(p.array))
+					{
+						// Spawning new panel for scroll list
+						var item = Instantiate(prefab, holder);
+						item.PopulateItem(texture, p.path);
+						spawnedItems.Add(item);
+
+						onCounterIncrease?.Invoke(spawnedItems.Count);
+					}
+                }
+
+				yield return null;
+			}
 		}	
 	}
 
 	private IEnumerator ThreadsManagementCoroutine()
 	{
-		// Joining finished threads from stack 
+		// Joining finished threads to main thread from stack 
 		while (true)
 		{
 			yield return null;
-			if (threads.Count == 0 || threads.Peek().IsAlive)
-				continue;
+
+			if (threads.Count == 0 || threads.Peek().IsAlive) continue;
 
 			threads?.Pop()?.Join();
 		}
@@ -70,16 +88,16 @@ public class ImageReader : MonoBehaviour
 		{
 			foreach (var item in spawnedItems) Destroy(item.gameObject);
 
-			// Clearing all lists to ensure we wont do operations on old data
+			// Clearing everything to ensure we wont do operations on old data
 			threads.Clear();
 			spawnedItems.Clear();
-			textureLoaders.Clear();
+			textureLoaders = new ConcurrentBag<PathArrayClass>();
 		}
 	}
 
 	private void GetFilesData()
 	{
-		currentFiles = Directory.EnumerateFiles(folderPath, "*.png").ToList();
+		currentFiles = new List<string>();
 
 		// Removing files which doesnt exist in currently found files  
 		foreach (var path in LoadedFiles)   
@@ -87,10 +105,13 @@ public class ImageReader : MonoBehaviour
 			if (!currentFiles.Contains(path)) RemoveFile(path);
 		}
 		
-		foreach (var path in currentFiles)
+		foreach (var path in Directory.EnumerateFiles(folderPath, "*.png"))
 		{
+			// Adding file only after we're sure we're checking it
+			currentFiles.Add(path);
 			// If loaded files doesnt contain found file -> we spawn it
 			// If loaded files contains it -> data must have changed -> refresh file
+
 			if (!LoadedFiles.Contains(path)) AddFile(path); 
 			else RefreshFile(path);
 		}
@@ -98,8 +119,6 @@ public class ImageReader : MonoBehaviour
 
 	private void AddFile(string filePath)
 	{
-		if (!File.Exists(filePath)) return;
-
 		// Creating new thread to load image data
 		Thread t = new Thread(new ParameterizedThreadStart(LoadFileThread));
 		t.Start(filePath);
@@ -132,8 +151,6 @@ public class ImageReader : MonoBehaviour
 	{
 		string path = (string)filePath;
 
-		if (!File.Exists(path)) return;
-
 		FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read);
 		byte[] headerArray = new byte[4];
 
@@ -149,25 +166,15 @@ public class ImageReader : MonoBehaviour
 			fs.Read(fileArray, 0, fileArray.Length);
 			fs.Close();
 
-			// Since Unity only let us create images in main thread
+			// Since Unity let us create images only in main thread
 			// we're loading image byte data in newly created thread
-			// and creating action to load image and spawn object from that data in main thread
-			Action act = () =>
+			// and creating an object with readed data to
+			// load image and spawn object from that data in main thread
+			textureLoaders.Add(new PathArrayClass()
 			{
-				Texture2D texture = new Texture2D(2, 2);
-
-				if (texture.LoadImage(fileArray))
-				{
-					// Spawning new panel for scroll list
-					var item = Instantiate(prefab, holder);
-					item.PopulateItem(texture, path);
-					spawnedItems.Add(item);
-
-					onCounterIncrease?.Invoke(spawnedItems.Count);
-				}
-			};	
-
-			textureLoaders.Push(act);
+				path = path,
+				array = fileArray
+			});
 		}
 		else Debug.Log($"File {fs.Name} is not proper .png file!");
 	}
@@ -201,4 +208,10 @@ public class ImageReader : MonoBehaviour
 			return true;
 		}
 	}
+}
+
+public class PathArrayClass
+{
+	public string path;
+	public byte[] array;
 }
