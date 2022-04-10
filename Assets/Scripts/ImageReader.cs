@@ -4,7 +4,6 @@ using System.Linq;
 using UnityEngine;
 using System.IO;
 using System;
-using TMPro;
 
 // Reads file data from given path and spawns object to display file name/image/date
 public class ImageReader : MonoBehaviour
@@ -12,7 +11,6 @@ public class ImageReader : MonoBehaviour
     [SerializeField] private List<ScrollListItem> spawnedItems = new List<ScrollListItem>();
     [SerializeField] private ScrollListItem prefab;
     [SerializeField] private Transform holder;
-    [SerializeField] private TMP_Text bugText;
 
     private List<Thread> threads = new List<Thread>();
     private Queue<Action> textureLoaders = new Queue<Action>();
@@ -27,6 +25,7 @@ public class ImageReader : MonoBehaviour
     {
         if (threads.Count > 0)
         {
+            // Removing threads that are finished
             var toRemove = new List<Thread>();
 
             for (int i = 0; i < threads.Count; ++i)
@@ -48,25 +47,27 @@ public class ImageReader : MonoBehaviour
         {
             do
             {
+                // Invoking actions with image load
                 textureLoaders?.Dequeue()?.Invoke();
-
             } while (textureLoaders.Count > 0);
         }
     }
 
     public void FindFilePath()
     {
-        folderPath = OpenDirDialog.Dialog.Open("Text");
+        // Opening windows dialog box for folder selection
+        folderPath = OpenDirDialog.Dialog.Open("Select folder to load files from...");
 
         if (folderPath != null)
         {
             ClearPrevData();
-            GetFiles();
+            CheckFilePath();
         }
     }
 
     private void ClearPrevData()
     {
+        // Clearing previously spawned items on browse
         if(spawnedItems.Count > 0)
         {
             foreach (var item in spawnedItems)
@@ -74,45 +75,51 @@ public class ImageReader : MonoBehaviour
                 Destroy(item.gameObject);
             }
 
-            spawnedItems.Clear();
+            // Clearing all lists to ensure we wont do operations on old data
             threads.Clear();
+            spawnedItems.Clear();
             textureLoaders.Clear();
         }
     }
 
-    public void GetFiles()
+    public void CheckFilePath()
     {
         if (!IsPathCorrect)
         {
-            Debug.Log("ImageReader - Path doesnt exist or is empty!");
+            Debug.Log("Path doesnt exist or is empty!");
             return;
         }
-        else RefreshImageData();
+        else GetFilesData();
     }
 
-    private void RefreshImageData()
+    private void GetFilesData()
     {
-        currentFiles = Directory.EnumerateFiles(folderPath, "*.png").Select(x => x.Replace("\\", "/").Replace("\\", @"\")).ToList();
+        currentFiles = Directory.EnumerateFiles(folderPath, "*.png").ToList();
 
-        foreach (var path in LoadedFiles)
+        // Removing all files which doesn't exist in currently found files  
+        foreach (var path in LoadedFiles)   
         {
             if (!currentFiles.Contains(path)) RemoveFile(path);
         }
         
         foreach (var path in currentFiles)
         {
-            if (!LoadedFiles.Contains(path)) AddFile(path);
-            else RemoveFile(path);
+            // If loaded files doesnt contain found file -> we spawn it
+            // If loaded files contains it -> data must have changed -> refresh file
+            if (!LoadedFiles.Contains(path)) AddFile(path); 
+            else RefreshFile(path);
         }
     }
 
     private void AddFile(string filePath)
     {
-        if (!File.Exists(filePath.Replace("/", "\\").Replace(@"\", "\\"))) return;
+        if (!File.Exists(filePath)) return;
 
+        // Spawning new panel for scroll list
         var item = Instantiate(prefab, holder);
         spawnedItems.Add(item);
 
+        // Creating new thread to load image data 
         Thread t = new Thread(new ParameterizedThreadStart(LoadFileThread));
         t.Start(new object[]
         {
@@ -125,33 +132,42 @@ public class ImageReader : MonoBehaviour
 
     private void RemoveFile(string filePath)
     {
-        if (!File.Exists(filePath.Replace("/", "\\").Replace(@"\", "\\"))) return;
+        if (!File.Exists(filePath)) return;
         
+        var item = spawnedItems.Find(x => x.FilePath == filePath);
+
+        spawnedItems.Remove(item);
+        Destroy(item.gameObject);
+    }
+
+    private void RefreshFile(string filePath)
+    {
+        if (!File.Exists(filePath)) return;
+
         var file = new FileInfo(filePath);
         var item = spawnedItems.Find(x => x.FilePath == filePath);
 
-        if(file != item.FileInfo)
+        if (file != item.FileInfo)
         {
             spawnedItems.Remove(item);
             Destroy(item.gameObject);
             AddFile(filePath);
         }
-        else
-        {
-            spawnedItems.Remove(item);
-            Destroy(item.gameObject);
-        }
     }
 
+    // Thread loading byte data from file
     private void LoadFileThread(object args)
     {
         var item = (ScrollListItem)((object[])args)[0];
         string path = (string)((object[])args)[1];
 
-        if (!File.Exists(path.Replace("/", "\\").Replace(@"\", "\\"))) return;
+        if (!File.Exists(path)) return;
         
         byte[] byteArray = File.ReadAllBytes(path);
-        
+
+        // Since Unity only let us create images in main thread
+        // we're loading image byte data in newly created thread
+        // and creating action to load image from that data in main thread
         Action act = () =>
         {
             Texture2D texture = new Texture2D(2, 2);

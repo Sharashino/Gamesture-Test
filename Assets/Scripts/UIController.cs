@@ -11,7 +11,7 @@ public class UIController : MonoBehaviour
     [SerializeField] private Button selectFolderButton;
     [SerializeField] private Button refreshButton;
 
-    public int ElementsAmount => imageReader.SpawnedItems.Count;
+    public int ItemsAmount => imageReader.SpawnedItems.Count;
 
     void Awake()
     {
@@ -23,15 +23,15 @@ public class UIController : MonoBehaviour
 
     private void OnRefresh()
     {
-        imageReader.GetFiles();
-        elementsCountText.text = ElementsAmount.ToString();
+        imageReader.CheckFilePath();
+        elementsCountText.text = ItemsAmount.ToString();
     }
 
     public void OnFindFilePath()
     {
         ShowHideDetails(true);
         imageReader.FindFilePath();
-        elementsCountText.text = ElementsAmount.ToString();
+        elementsCountText.text = ItemsAmount.ToString();
     }
 
     private void ShowHideDetails(bool state)
