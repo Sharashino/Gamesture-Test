@@ -5,38 +5,44 @@ using TMPro;
 // Controlls UI buttons and canvas groups
 public class UIController : MonoBehaviour
 {
-    [SerializeField] private ImageReader imageReader;
-    [SerializeField] private CanvasGroup detailsGroup;
-    [SerializeField] private TMP_Text elementsCountText;
-    [SerializeField] private Button selectFolderButton;
-    [SerializeField] private Button refreshButton;
+	[SerializeField] private ImageReader imageReader;
+	[SerializeField] private CanvasGroup detailsGroup;
+	[SerializeField] private TMP_Text elementsCountText;
+	[SerializeField] private Button selectFolderButton;
+	[SerializeField] private Button refreshButton;
 
-    public int ItemsAmount => imageReader.SpawnedItems.Count;
+	void Awake()
+	{
+		selectFolderButton?.onClick.AddListener(OnFindFilePath);
+		refreshButton?.onClick.AddListener(OnRefresh);
 
-    void Awake()
+		ShowHideDetails(false);
+		imageReader.onCounterIncrease = x => SetCounter(x);
+	}
+
+	private void OnRefresh()
+	{
+		if(!imageReader.IsLoading)
+        {
+			SetCounter(0);
+			imageReader.CheckFilePath();
+		}
+	}
+
+	private void OnFindFilePath()
+	{
+		SetCounter(0);
+		ShowHideDetails(imageReader.FindFilePath());
+	}
+		
+	private void SetCounter(int amt)
     {
-        selectFolderButton?.onClick.AddListener(OnFindFilePath);
-        refreshButton?.onClick.AddListener(OnRefresh);
-
-        ShowHideDetails(false);
+		elementsCountText.text = amt.ToString();
     }
 
-    private void OnRefresh()
-    {
-        imageReader.CheckFilePath();
-        elementsCountText.text = ItemsAmount.ToString();
-    }
-
-    public void OnFindFilePath()
-    {
-        ShowHideDetails(true);
-        imageReader.FindFilePath();
-        elementsCountText.text = ItemsAmount.ToString();
-    }
-
-    private void ShowHideDetails(bool state)
-    {
-        if (state) detailsGroup.Enable();
-        else detailsGroup.Disable();
-    }    
+	private void ShowHideDetails(bool state)
+	{
+		if (state) detailsGroup.Enable();
+		else detailsGroup.Disable();
+	}    
 }
