@@ -14,7 +14,6 @@ public class ImageReader : MonoBehaviour
 	[SerializeField] private List<ScrollListItem> spawnedItems = new List<ScrollListItem>();
 	[SerializeField] private ScrollListItem prefab;
 	[SerializeField] private Transform holder;
-	[SerializeField] private TMP_Text infoText; 
 	private ConcurrentBag<PathArrayClass> textureLoaders = new ConcurrentBag<PathArrayClass>();
 	private Stack<Thread> threads = new Stack<Thread>();
 	private List<string> currentFiles = new List<string>();
