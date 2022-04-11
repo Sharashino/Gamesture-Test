@@ -2,7 +2,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections;
 using System.Threading;
-using UnityEditor;
 using System.Linq;
 using UnityEngine;
 using System.IO;
@@ -182,7 +181,7 @@ public class ImageReader : MonoBehaviour
 	public bool FindFilePath()
 	{
 		// Opening windows dialog box for folder selection
-		var paths = StandaloneFileBrowser.OpenFolderPanel("Browse for folder...", "", false);
+		var paths = StandaloneFileBrowser.OpenFolderPanel("", "", false);
 
 		if (paths != null && paths.Length > 0) folderPath = paths.First();
 
