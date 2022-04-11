@@ -2,11 +2,12 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections;
 using System.Threading;
+using UnityEditor;
 using System.Linq;
 using UnityEngine;
 using System.IO;
 using System;
-using TMPro;
+using SFB;
 
 // Reads file data from given path and spawns object to display file name/image/date
 public class ImageReader : MonoBehaviour
@@ -181,7 +182,9 @@ public class ImageReader : MonoBehaviour
 	public bool FindFilePath()
 	{
 		// Opening windows dialog box for folder selection
-		folderPath = OpenDirDialog.Dialog.Open("Select folder to load files from...");
+		var paths = StandaloneFileBrowser.OpenFolderPanel("Browse for folder...", "", false);
+
+		if (paths != null && paths.Length > 0) folderPath = paths.First();
 
 		if (folderPath != null)
 		{
