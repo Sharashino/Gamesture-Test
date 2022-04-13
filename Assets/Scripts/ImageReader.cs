@@ -60,11 +60,11 @@ public class ImageReader : MonoBehaviour
 
 						onCounterIncrease?.Invoke(spawnedItems.Count);
 					}
-                }
+				}
 
 				yield return null;
 			}
-		}	
+		}
 	}
 
 	private IEnumerator ThreadsManagementCoroutine()
@@ -96,23 +96,29 @@ public class ImageReader : MonoBehaviour
 
 	private void GetFilesData()
 	{
-		currentFiles = new List<string>();
-
-		// Removing files which doesnt exist in currently found files  
-		foreach (var path in LoadedFiles)   
+		if (!Directory.Exists(folderPath))
 		{
-			if (!currentFiles.Contains(path)) RemoveFile(path);
+			Debug.Log("Directory must have been deleted or changed!");
+			LoadedFiles.ForEach(f => RemoveFile(f));
+			return;
 		}
-		
-		foreach (var path in Directory.EnumerateFiles(folderPath, "*.png"))
-		{
-			// Adding file only after we're sure we're checking it
-			currentFiles.Add(path);
-			// If loaded files doesnt contain found file -> we spawn it
-			// If loaded files contains it -> data must have changed -> refresh file
 
-			if (!LoadedFiles.Contains(path)) AddFile(path); 
-			else RefreshFile(path);
+		var foundFiles = Directory.EnumerateFiles(folderPath, "*.png");
+
+        // First remove files which doesnt exist in currently found files  
+        foreach (var path in LoadedFiles)
+        {
+            if (!foundFiles.Contains(path))
+            {
+				RemoveFile(path);
+				Debug.Log($"Removed file {path} !");
+            }
+        }
+
+        foreach (var path in foundFiles)
+		{
+			// If loaded files doesnt contain found file -> we spawn it
+			if (!LoadedFiles.Contains(path)) AddFile(path);
 		}
 	}
 
@@ -131,19 +137,6 @@ public class ImageReader : MonoBehaviour
 
 		spawnedItems.Remove(item);
 		Destroy(item.gameObject);
-	}
-
-	private void RefreshFile(string filePath)
-	{
-		var file = new FileInfo(filePath);
-		var item = spawnedItems.Find(x => x.FilePath == filePath);
-
-		if (file != item.FileInfo)
-		{
-			spawnedItems.Remove(item);
-			Destroy(item.gameObject);
-			AddFile(filePath);
-		}
 	}
 
 	private void LoadFileThread(object filePath)

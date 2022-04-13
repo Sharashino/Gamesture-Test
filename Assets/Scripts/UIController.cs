@@ -18,6 +18,7 @@ public class UIController : MonoBehaviour
 		selectFolderButton?.onClick.AddListener(OnFindFilePath);
 		refreshButton?.onClick.AddListener(OnRefresh);
 
+		SetCounter(0);
 		ShowHideDetails(false);
 		imageReader.onCounterIncrease = x => SetCounter(x);
 	}
@@ -25,11 +26,7 @@ public class UIController : MonoBehaviour
 	private void OnRefresh()
 	{
 		// This prevents us from clicking refresh when the data is being loaded
-		if (!imageReader.IsLoading) 
-        {
-			SetCounter(0);
-			imageReader.CheckFilePath();
-		}
+		if (!imageReader.IsLoading) imageReader.CheckFilePath();
 	}
 
 	private void OnFindFilePath()
