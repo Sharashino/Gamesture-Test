@@ -1,3 +1,11 @@
-# Gamesture-Test
+# Multithreaded Image Loader
 
-Recruitment task for Gamesture by Gerard Adamkiewicz
+Image Loader in Unity.
+
+**Features**
+- default system dialog window for folder browsing
+- is .png check with reading loaded image bytes
+- multithreaded image loading
+- scroll list files view
+
+
