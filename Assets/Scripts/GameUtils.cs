@@ -1,7 +1,7 @@
 using UnityEngine;
 
 // Game utils
-public static class GamestureUtils
+public static class GameUtils
 {
 	public static void Enable(this CanvasGroup cg)
 	{

@@ -16,7 +16,6 @@ public class ImageReader : MonoBehaviour
 	[SerializeField] private Transform holder;
 	private ConcurrentBag<PathArrayClass> textureLoaders = new ConcurrentBag<PathArrayClass>();
 	private Stack<Thread> threads = new Stack<Thread>();
-	private List<string> currentFiles = new List<string>();
 	private string folderPath;
 	private bool isLoading = false;
 
