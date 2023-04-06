@@ -1,11 +1,11 @@
-# Multithreaded Image Reader
+# Multi-Threaded Image Reader
 
 Image Reader made in Unity.
 
 **Features**
 - system native folder browsing using [Unity Standalone File Browser](https://github.com/gkngkc/UnityStandaloneFileBrowser) plugin
 - is .png check with reading loaded image bytes
-- multithreaded image loading
+- multi-threaded image loading
 - on button file refresh
 - scroll list files view
 
